@@ -415,6 +415,23 @@ document.addEventListener('DOMContentLoaded', () => {
 // ========== 拉黑测试事件处理 ==========
 
 /**
+ * 验证用户 ID 格式
+ * @param {string} userId - 用户 ID
+ * @returns {boolean} 是否有效
+ */
+function validateUserId(userId) {
+    // UID 必须是纯数字
+    if (!/^\d+$/.test(userId)) {
+        return false;
+    }
+    // Bilibili UID 通常不会太短或太长（1-20位）
+    if (userId.length < 1 || userId.length > 20) {
+        return false;
+    }
+    return true;
+}
+
+/**
  * 拉黑测试按钮处理
  */
 async function handleBlockTest() {
@@ -422,6 +439,11 @@ async function handleBlockTest() {
 
     if (!userId) {
         showStatus('⚠️ 请输入用户 ID', 'warning');
+        return;
+    }
+
+    if (!validateUserId(userId)) {
+        showStatus('⚠️ 用户 ID 格式无效，请输入纯数字', 'warning');
         return;
     }
 
@@ -455,6 +477,11 @@ async function handleUnblockTest() {
 
     if (!userId) {
         showStatus('⚠️ 请输入用户 ID', 'warning');
+        return;
+    }
+
+    if (!validateUserId(userId)) {
+        showStatus('⚠️ 用户 ID 格式无效，请输入纯数字', 'warning');
         return;
     }
 
@@ -531,18 +558,49 @@ function renderUidList(uids) {
         return;
     }
 
-    listEl.innerHTML = `
-        <div class="uid-count">解析到 <strong>${uids.length}</strong> 个用户 UID:</div>
-        <div class="uid-items">
-            ${uids.map((uid, index) => `
-                <div class="uid-item" data-uid="${uid}">
-                    <span class="uid-number">${index + 1}.</span>
-                    <span class="uid-value">${uid}</span>
-                    <span class="uid-status"></span>
-                </div>
-            `).join('')}
-        </div>
-    `;
+    // 使用 DOM 操作而不是 innerHTML 以防止 XSS
+    listEl.innerHTML = '';
+    
+    // 创建计数显示
+    const countDiv = document.createElement('div');
+    countDiv.className = 'uid-count';
+    const countText = document.createTextNode('解析到 ');
+    const countStrong = document.createElement('strong');
+    countStrong.textContent = uids.length;
+    const countSuffix = document.createTextNode(' 个用户 UID:');
+    countDiv.appendChild(countText);
+    countDiv.appendChild(countStrong);
+    countDiv.appendChild(countSuffix);
+    
+    // 创建 UID 列表容器
+    const itemsDiv = document.createElement('div');
+    itemsDiv.className = 'uid-items';
+    
+    // 添加每个 UID 项
+    uids.forEach((uid, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'uid-item';
+        itemDiv.setAttribute('data-uid', uid);
+        
+        const numberSpan = document.createElement('span');
+        numberSpan.className = 'uid-number';
+        numberSpan.textContent = `${index + 1}.`;
+        
+        const valueSpan = document.createElement('span');
+        valueSpan.className = 'uid-value';
+        valueSpan.textContent = uid;
+        
+        const statusSpan = document.createElement('span');
+        statusSpan.className = 'uid-status';
+        
+        itemDiv.appendChild(numberSpan);
+        itemDiv.appendChild(valueSpan);
+        itemDiv.appendChild(statusSpan);
+        itemsDiv.appendChild(itemDiv);
+    });
+    
+    listEl.appendChild(countDiv);
+    listEl.appendChild(itemsDiv);
 
     // 启用批量操作按钮
     document.getElementById('batchBlockBtn').disabled = false;
@@ -598,7 +656,7 @@ async function handleBatchBlock() {
 
         // 更新进度 - 显示百分比
         const percentage = Math.round(((i + 1) / parsedUids.length) * 100);
-        progressEl.innerHTML = `⏳ 正在拉黑 ${i + 1}/${parsedUids.length} (${percentage}%): ${uid}`;
+        progressEl.textContent = `⏳ 正在拉黑 ${i + 1}/${parsedUids.length} (${percentage}%): ${uid}`;
         if (itemEl) itemEl.textContent = '⏳ 处理中...';
 
         try {
@@ -609,7 +667,13 @@ async function handleBatchBlock() {
                 if (itemEl) itemEl.innerHTML = '<span class="status-success">✓ 成功</span>';
             } else {
                 failCount++;
-                if (itemEl) itemEl.innerHTML = `<span class="status-error">✗ ${result.message}</span>`;
+                if (itemEl) {
+                    const errorSpan = document.createElement('span');
+                    errorSpan.className = 'status-error';
+                    errorSpan.textContent = `✗ ${result.message}`;
+                    itemEl.innerHTML = '';
+                    itemEl.appendChild(errorSpan);
+                }
             }
         } catch (error) {
             failCount++;
@@ -660,7 +724,7 @@ async function handleBatchUnblock() {
 
         // 更新进度 - 显示百分比
         const percentage = Math.round(((i + 1) / parsedUids.length) * 100);
-        progressEl.innerHTML = `⏳ 正在取消拉黑 ${i + 1}/${parsedUids.length} (${percentage}%): ${uid}`;
+        progressEl.textContent = `⏳ 正在取消拉黑 ${i + 1}/${parsedUids.length} (${percentage}%): ${uid}`;
         if (itemEl) itemEl.textContent = '⏳ 处理中...';
 
         try {
@@ -671,7 +735,13 @@ async function handleBatchUnblock() {
                 if (itemEl) itemEl.innerHTML = '<span class="status-success">✓ 成功</span>';
             } else {
                 failCount++;
-                if (itemEl) itemEl.innerHTML = `<span class="status-error">✗ ${result.message}</span>`;
+                if (itemEl) {
+                    const errorSpan = document.createElement('span');
+                    errorSpan.className = 'status-error';
+                    errorSpan.textContent = `✗ ${result.message}`;
+                    itemEl.innerHTML = '';
+                    itemEl.appendChild(errorSpan);
+                }
             }
         } catch (error) {
             failCount++;

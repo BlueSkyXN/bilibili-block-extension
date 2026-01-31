@@ -22,11 +22,19 @@ function getCsrfTokenFromPage() {
  */
 async function blockUserInPage(userId) {
     try {
+        // 验证 userId 格式
+        if (!userId || !/^\d+$/.test(userId)) {
+            return {
+                success: false,
+                message: '用户 ID 格式无效'
+            };
+        }
+
         const csrf = getCsrfTokenFromPage();
         if (!csrf) {
             return {
                 success: false,
-                message: '未找到 CSRF Token,请先登录 Bilibili'
+                message: '未找到 CSRF Token，请先登录 Bilibili'
             };
         }
 
@@ -63,12 +71,28 @@ async function blockUserInPage(userId) {
 
         if (result.code === 0) {
             return { success: true, message: '拉黑成功', data: result };
+        } else if (result.code === -101) {
+            return { success: false, message: '账号未登录', data: result };
+        } else if (result.code === -111) {
+            return { success: false, message: 'CSRF 校验失败', data: result };
+        } else if (result.code === -400) {
+            return { success: false, message: '请求错误', data: result };
         } else {
-            return { success: false, message: result.message || '拉黑失败', data: result };
+            return { 
+                success: false, 
+                message: result.message || `操作失败 (错误码: ${result.code})`, 
+                data: result 
+            };
         }
     } catch (error) {
         console.error('[Content Script] 拉黑错误:', error);
-        return { success: false, message: error.message };
+        
+        // 区分网络错误和其他错误
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+            return { success: false, message: '网络连接失败，请检查网络' };
+        }
+        
+        return { success: false, message: `操作失败: ${error.message}` };
     }
 }
 
@@ -77,11 +101,19 @@ async function blockUserInPage(userId) {
  */
 async function unblockUserInPage(userId) {
     try {
+        // 验证 userId 格式
+        if (!userId || !/^\d+$/.test(userId)) {
+            return {
+                success: false,
+                message: '用户 ID 格式无效'
+            };
+        }
+
         const csrf = getCsrfTokenFromPage();
         if (!csrf) {
             return {
                 success: false,
-                message: '未找到 CSRF Token,请先登录 Bilibili'
+                message: '未找到 CSRF Token，请先登录 Bilibili'
             };
         }
 
@@ -118,12 +150,28 @@ async function unblockUserInPage(userId) {
 
         if (result.code === 0) {
             return { success: true, message: '取消拉黑成功', data: result };
+        } else if (result.code === -101) {
+            return { success: false, message: '账号未登录', data: result };
+        } else if (result.code === -111) {
+            return { success: false, message: 'CSRF 校验失败', data: result };
+        } else if (result.code === -400) {
+            return { success: false, message: '请求错误', data: result };
         } else {
-            return { success: false, message: result.message || '取消拉黑失败', data: result };
+            return { 
+                success: false, 
+                message: result.message || `操作失败 (错误码: ${result.code})`, 
+                data: result 
+            };
         }
     } catch (error) {
         console.error('[Content Script] 取消拉黑错误:', error);
-        return { success: false, message: error.message };
+        
+        // 区分网络错误和其他错误
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+            return { success: false, message: '网络连接失败，请检查网络' };
+        }
+        
+        return { success: false, message: `操作失败: ${error.message}` };
     }
 }
 
