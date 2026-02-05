@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Bilibili Cookie Reader",
+  "name": "Bilibili 快速拉黑助手",
   "version": "1.0.0",
-  "description": "读取并显示 Bilibili 网站的所有 Cookie 信息(包括 HttpOnly)",
+  "description": "Bilibili 批量拉黑工具，支持单个测试和批量操作，包含 Cookie 管理功能",
   "permissions": [
     "cookies",
-    "activeTab"
+    "activeTab",
+    "tabs"
   ],
   "host_permissions": [
     "*://*.bilibili.com/*",
